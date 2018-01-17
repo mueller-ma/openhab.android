@@ -142,8 +142,17 @@ public class OpenHABWidgetListFragment extends Fragment
                 openHABBaseUrl, openHABUsername, openHABPassword, this,
                 getResources().getInteger(R.integer.pager_columns) > 1);
 
+        if (savedInstanceState != null) {
+            openHABWidgetAdapter.setSelectedPosition(savedInstanceState.getInt("selection", -1));
+        }
         mRecyclerView.setLayoutManager(new LinearLayoutManager(mActivity));
         mRecyclerView.setAdapter(openHABWidgetAdapter);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("selection", openHABWidgetAdapter.getSelectedPosition());
     }
 
     @Override
