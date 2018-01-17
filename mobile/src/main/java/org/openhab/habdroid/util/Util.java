@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import org.openhab.habdroid.R;
 import org.openhab.habdroid.model.OpenHAB1Sitemap;
 import org.openhab.habdroid.model.OpenHAB2Sitemap;
+import org.openhab.habdroid.model.OpenHABItem;
 import org.openhab.habdroid.model.OpenHABSitemap;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -33,6 +34,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Headers;
 
 public class Util {
 
@@ -92,7 +96,7 @@ public class Util {
                 if (sitemap2.getLabel() == null) {
                     return 1;
                 }
-                return  sitemap1.getLabel().compareTo(sitemap2.getLabel());
+                return sitemap1.getLabel().compareTo(sitemap2.getLabel());
             }
         });
 
@@ -105,7 +109,7 @@ public class Util {
             try {
                 JSONObject sitemapJson = jsonArray.getJSONObject(i);
                 OpenHABSitemap openHABSitemap = new OpenHAB2Sitemap(sitemapJson);
-                if(! (openHABSitemap.getName().equals("_default") && jsonArray.length() != 1)) {
+                if (!(openHABSitemap.getName().equals("_default") && jsonArray.length() != 1)) {
                     sitemapList.add(openHABSitemap);
                 }
             } catch (JSONException e) {
@@ -134,6 +138,7 @@ public class Util {
     public static void setActivityTheme(@NonNull final Activity activity) {
         setActivityTheme(activity, null);
     }
+
     public static void setActivityTheme(@NonNull final Activity activity, String theme) {
         if (theme == null) {
             theme = PreferenceManager.getDefaultSharedPreferences(activity).getString(Constants.PREFERENCE_THEME, activity.getString(R.string.theme_value_dark));
@@ -161,5 +166,24 @@ public class Util {
             error = error.getCause();
         }
         return false;
+    }
+
+    public static void sendItemCommand(MyAsyncHttpClient client, OpenHABItem item, String command) {
+        if (item == null || command == null) {
+            return;
+        }
+        client.post(item.getLink(), command, "text/plain", new MyHttpClient.TextResponseHandler() {
+            @Override
+            public void onFailure(Call call, int statusCode, Headers headers, String responseString, Throwable error) {
+                Log.e(TAG, "Got command error " + error.getMessage());
+                if (responseString != null)
+                    Log.e(TAG, "Error response = " + responseString);
+            }
+
+            @Override
+            public void onSuccess(Call call, int statusCode, Headers headers, String responseString) {
+                Log.d(TAG, "Command was sent successfully");
+            }
+        });
     }
 }
