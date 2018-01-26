@@ -9,7 +9,6 @@
 
 package org.openhab.habdroid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -66,7 +65,6 @@ import okhttp3.Headers;
 public class OpenHABWidgetListFragment extends Fragment
         implements OpenHABWidgetAdapter.ItemClickListener {
     private static final String TAG = OpenHABWidgetListFragment.class.getSimpleName();
-    private OnWidgetSelectedListener widgetSelectedListener;
     // Datasource, providing list of openHAB widgets
     private OpenHABWidgetDataSource openHABWidgetDataSource;
     // List adapter for list view of openHAB widgets
@@ -174,9 +172,8 @@ public class OpenHABWidgetListFragment extends Fragment
         }
 
         // Widget have a page linked to it
-        if (OpenHABWidgetListFragment.this.widgetSelectedListener != null) {
-            widgetSelectedListener.onWidgetSelectedListener(openHABWidget.getLinkedPage(),
-                    OpenHABWidgetListFragment.this);
+        if (mActivity != null) {
+            mActivity.onWidgetSelected(openHABWidget.getLinkedPage(), OpenHABWidgetListFragment.this);
         }
         return true;
     }
@@ -212,19 +209,6 @@ public class OpenHABWidgetListFragment extends Fragment
     @NonNull
     private String getIconFormat() {
         return PreferenceManager.getDefaultSharedPreferences(mActivity).getString("iconFormatType","PNG");
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        Log.d(TAG, "onAttach()");
-        Log.d(TAG, "isAdded = " + isAdded());
-        if (activity instanceof OnWidgetSelectedListener) {
-            widgetSelectedListener = (OnWidgetSelectedListener)activity;
-            mActivity = (OpenHABMainActivity)activity;
-        } else {
-            Log.e("TAG", "Attached to incompatible activity");
-        }
     }
 
     @Override
@@ -460,8 +444,8 @@ public class OpenHABWidgetListFragment extends Fragment
 
         openHABWidgetAdapter.update(widgetList);
         mTitle = openHABWidgetDataSource.getTitle();
-        if (widgetSelectedListener != null && mIsVisible) {
-            widgetSelectedListener.onUpdateTitle(mTitle, this);
+        if (mActivity != null && mIsVisible) {
+            mActivity.updateTitle();
         }
         // Set widget list index to saved or zero position
         // This would mean we got widget and command from nfc tag, so we need to do some automatic actions!
