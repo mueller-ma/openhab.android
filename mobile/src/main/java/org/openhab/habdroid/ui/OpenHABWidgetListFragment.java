@@ -154,6 +154,7 @@ public class OpenHABWidgetListFragment extends Fragment
         mLayoutManager.setRecycleChildrenOnDetach(true);
 
         mRecyclerView.setRecycledViewPool(mActivity.getViewPool());
+        mRecyclerView.addItemDecoration(new OpenHABWidgetAdapter.DividerItemDecoration(mActivity));
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setAdapter(openHABWidgetAdapter);
     }

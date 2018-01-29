@@ -15,8 +15,11 @@ import android.content.DialogInterface;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.support.annotation.ColorInt;
 import android.support.annotation.IdRes;
@@ -205,11 +208,6 @@ public class OpenHABWidgetAdapter extends RecyclerView.Adapter<OpenHABWidgetAdap
         holder.stop();
         holder.bind(mItems.get(position));
         holder.itemView.setActivated(mSelectedPosition == position && mSelectionEnabled);
-
-        // hide dividers before frame widgets
-        boolean nextIsFrame = position < mItems.size() - 1
-                && getItemViewType(position + 1) == TYPE_FRAME;
-        holder.updateDivider(!nextIsFrame);
     }
 
     @Override
@@ -326,14 +324,12 @@ public class OpenHABWidgetAdapter extends RecyclerView.Adapter<OpenHABWidgetAdap
     }
 
     public abstract static class ViewHolder extends RecyclerView.ViewHolder {
-        private final View mDivider;
         protected final MyAsyncHttpClient mHttpClient;
         protected final ConnectionInfo mConnectionInfo;
 
         ViewHolder(LayoutInflater inflater, ViewGroup parent, @LayoutRes int layoutResId,
                 MyAsyncHttpClient httpClient, ConnectionInfo connection) {
             super(inflater.inflate(layoutResId, parent, false));
-            mDivider = itemView.findViewById(R.id.listdivider);
             mHttpClient = httpClient;
             mConnectionInfo = connection;
         }
@@ -341,12 +337,6 @@ public class OpenHABWidgetAdapter extends RecyclerView.Adapter<OpenHABWidgetAdap
         public abstract void bind(OpenHABWidget widget);
         public void start() {}
         public void stop() {}
-
-        public void updateDivider(boolean show) {
-            if (mDivider != null) {
-                mDivider.setVisibility(show ? View.VISIBLE : View.GONE);
-            }
-        }
 
         protected static void updateTextViewColor(TextView view, Integer color) {
             view.setTextColor(color != null ? color : view.getTextColors().getDefaultColor());
@@ -1102,6 +1092,73 @@ public class OpenHABWidgetAdapter extends RecyclerView.Adapter<OpenHABWidgetAdap
             if (mStreamer != null) {
                 mStreamer.stop();
             }
+        }
+    }
+
+    public static class DividerItemDecoration extends RecyclerView.ItemDecoration {
+        private final Drawable mDivider;
+
+        public DividerItemDecoration(Context context) {
+            final TypedArray a = context.obtainStyledAttributes(null, new int[] {
+                    android.R.attr.listDivider
+            });
+            mDivider = a.getDrawable(0);
+		    a.recycle();
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view,
+                RecyclerView parent, RecyclerView.State state) {
+            super.getItemOffsets(outRect, view, parent, state);
+            if (mDivider != null && !suppressDividerForChild(view, parent)) {
+                outRect.bottom = mDivider.getIntrinsicHeight();
+            }
+        }
+
+        @Override
+        public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
+            if (mDivider == null) {
+                return;
+            }
+
+            int left = parent.getPaddingLeft();
+            int right = parent.getWidth() - parent.getPaddingRight();
+
+            int childCount = parent.getChildCount();
+            for (int i = 0; i < childCount - 1; i++) {
+                View child = parent.getChildAt(i);
+
+                if (suppressDividerForChild(child, parent)) {
+                    continue;
+                }
+
+                RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
+
+                int top = child.getBottom() + params.bottomMargin;
+                int bottom = top + mDivider.getIntrinsicHeight();
+
+                mDivider.setBounds(left, top, right, bottom);
+                mDivider.draw(c);
+            }
+        }
+
+        private boolean suppressDividerForChild(View child, RecyclerView parent) {
+            int position = parent.getChildAdapterPosition(child);
+            if (position == RecyclerView.NO_POSITION) {
+                return false;
+            }
+
+            // hide dividers before and after frame widgets
+            if (parent.getAdapter().getItemViewType(position) == TYPE_FRAME) {
+                return true;
+            }
+            if (position < parent.getAdapter().getItemCount() - 1) {
+                if (parent.getAdapter().getItemViewType(position + 1) == TYPE_FRAME) {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
