@@ -20,16 +20,28 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.os.Bundle
 import android.os.Parcelable
 import android.util.Log
-import androidx.work.*
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import kotlinx.android.parcel.Parcelize
 import org.openhab.habdroid.R
 import org.openhab.habdroid.model.NfcTag
 import org.openhab.habdroid.ui.AbstractItemPickerActivity
 import org.openhab.habdroid.ui.preference.toItemUpdatePrefValue
-import org.openhab.habdroid.util.*
-import java.util.*
+import org.openhab.habdroid.util.Constants
+import org.openhab.habdroid.util.TaskerIntent
+import org.openhab.habdroid.util.Util
+import org.openhab.habdroid.util.getPrefs
+import org.openhab.habdroid.util.getString
+import org.openhab.habdroid.util.isDemoModeEnabled
+import org.openhab.habdroid.util.isTaskerPluginEnabled
+import java.util.HashMap
 import java.util.concurrent.TimeUnit
 
 class BackgroundTasksManager : BroadcastReceiver() {
@@ -96,11 +108,13 @@ class BackgroundTasksManager : BroadcastReceiver() {
         private val TAG = BackgroundTasksManager::class.java.simpleName
 
         internal const val ACTION_RETRY_UPLOAD = "org.openhab.habdroid.background.action.RETRY_UPLOAD"
+        internal const val ACTION_UPDATE_WIDGET = "org.openhab.habdroid.background.action.UPDATE_WIDGET"
         internal const val EXTRA_RETRY_INFO_LIST = "retryInfoList"
 
         private const val WORKER_TAG_ITEM_UPLOADS = "itemUploads"
         const val WORKER_TAG_PREFIX_NFC = "nfc-"
         private const val WORKER_TAG_PREFIX_TASKER = "tasker-"
+        private const val WORKER_TAG_PREFIX_WIDGET = "widget-"
 
         internal val KNOWN_KEYS = listOf(
             Constants.PREFERENCE_ALARM_CLOCK
@@ -130,6 +144,15 @@ class BackgroundTasksManager : BroadcastReceiver() {
                 Util.showToast(context, message)
                 enqueueItemUpload(WORKER_TAG_PREFIX_NFC + tag.item, tag.item, tag.state, BackoffPolicy.LINEAR)
             }
+        }
+
+        fun enqueueWidgetItemUpdateIfNeeded(bundle: Bundle) {
+            val itemName = bundle.getString(AbstractItemPickerActivity.EXTRA_ITEM_NAME)
+            val state = bundle.getString(AbstractItemPickerActivity.EXTRA_ITEM_STATE)
+            if (itemName.isNullOrEmpty() || state.isNullOrEmpty()) {
+                return
+            }
+            enqueueItemUpload(WORKER_TAG_PREFIX_WIDGET + itemName, itemName, state, BackoffPolicy.LINEAR)
         }
 
         private fun scheduleWorker(context: Context, key: String) {
