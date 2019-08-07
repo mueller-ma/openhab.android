@@ -377,6 +377,7 @@ class PreferencesActivity : AbstractBaseActivity() {
         }
 
         private fun clearImageCache(context: Context) {
+            // Clear widget icons
             val files = context.fileList()
             files.forEach {
                 if (it.matches("^widget-\\d+$".toRegex())) {
