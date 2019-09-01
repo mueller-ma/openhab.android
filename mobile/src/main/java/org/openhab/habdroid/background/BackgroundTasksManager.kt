@@ -145,13 +145,14 @@ class BackgroundTasksManager : BroadcastReceiver() {
             }
         }
 
-        fun enqueueWidgetItemUpdateIfNeeded(data: ItemUpdateWidget.ItemUpdateWidgetData) {
+        fun enqueueWidgetItemUpdateIfNeeded(context: Context, data: ItemUpdateWidget.ItemUpdateWidgetData) {
             if (data.item.isNotEmpty() && data.state.isNotEmpty()) {
                 enqueueItemUpload(
                     WORKER_TAG_PREFIX_WIDGET + data.item,
                     data.item,
                     data.state,
-                    BackoffPolicy.LINEAR
+                    BackoffPolicy.LINEAR,
+                    context.getString(R.string.item_update_widget_success_toast, data.label, data.mappedState)
                 )
             }
         }
@@ -179,7 +180,8 @@ class BackgroundTasksManager : BroadcastReceiver() {
             tag: String,
             itemName: String,
             value: String,
-            backoffPolicy: BackoffPolicy = BackoffPolicy.EXPONENTIAL
+            backoffPolicy: BackoffPolicy = BackoffPolicy.EXPONENTIAL,
+            successToast: String? = null
         ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -189,7 +191,7 @@ class BackgroundTasksManager : BroadcastReceiver() {
                 .setBackoffCriteria(backoffPolicy, WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
                 .addTag(tag)
                 .addTag(WORKER_TAG_ITEM_UPLOADS)
-                .setInputData(ItemUpdateWorker.buildData(itemName, value))
+                .setInputData(ItemUpdateWorker.buildData(itemName, value, successToast))
                 .build()
 
             val workManager = WorkManager.getInstance()
