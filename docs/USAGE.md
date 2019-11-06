@@ -8,7 +8,7 @@ source: https://github.com/openhab/openhab-android/blob/master/docs/USAGE.md
 
 <!-- Attention authors: Do not edit directly. Please add your changes to the appropriate source repository -->
 
-# Android App
+# Android App Test
 
 The openHAB Android application is a native client for openHAB, compatible with phones and tablets.
 The app follows the basic principles of the other openHAB UIs, like Basic UI, and presents your predefined openHAB [sitemap(s)](https://www.openhab.org/docs/configuration/sitemaps.html).
