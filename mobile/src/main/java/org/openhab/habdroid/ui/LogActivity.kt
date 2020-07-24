@@ -30,10 +30,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.openhab.habdroid.R
+import org.openhab.habdroid.model.ServerConfiguration
 import org.openhab.habdroid.util.ToastType
+import org.openhab.habdroid.util.getConfiguredServerIds
 import org.openhab.habdroid.util.getLocalUrl
 import org.openhab.habdroid.util.getPrefs
 import org.openhab.habdroid.util.getRemoteUrl
+import org.openhab.habdroid.util.getSecretPrefs
 import org.openhab.habdroid.util.showToast
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -191,8 +194,11 @@ class LogActivity : AbstractBaseActivity(), SwipeRefreshLayout.OnRefreshListener
         }
 
         var log = logBuilder.toString()
-        log = redactHost(log, getPrefs().getLocalUrl(), "<openhab-local-address>")
-        log = redactHost(log, getPrefs().getRemoteUrl(), "<openhab-remote-address>")
+        getPrefs().getConfiguredServerIds().forEach { id ->
+            val serverName = ServerConfiguration.load(getPrefs(), getSecretPrefs(), id)?.name ?: id.toString()
+            log = redactHost(log, getPrefs().getLocalUrl(id), "<openhab-local-address-$serverName>")
+            log = redactHost(log, getPrefs().getRemoteUrl(id), "<openhab-remote-address-$serverName>")
+        }
         log
     }
 
