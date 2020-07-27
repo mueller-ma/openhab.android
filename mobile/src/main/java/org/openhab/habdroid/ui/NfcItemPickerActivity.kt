@@ -27,7 +27,8 @@ import org.openhab.habdroid.util.wasNfcInfoHintShown
 class NfcItemPickerActivity(
     override var hintMessageId: Int = R.string.nfc_info_hint,
     override var hintButtonMessageId: Int = R.string.got_it,
-    override var hintIconId: Int = R.drawable.ic_nfc_black_120dp
+    override var hintIconId: Int = R.drawable.ic_nfc_black_120dp,
+    override val multiServerSupport: Boolean = false
 ) : AbstractItemPickerActivity() {
     override val forceNonFullscreen = false
     @LayoutRes override val additionalConfigLayoutRes: Int = R.layout.nfc_item_picker_config
@@ -65,7 +66,7 @@ class NfcItemPickerActivity(
         }
     }
 
-    override fun finish(item: Item, state: String, mappedState: String, tag: Any?) {
+    override fun finish(item: Item, state: String, mappedState: String, tag: Any?, serverId: Int) {
         val deviceId = tag == "isDeviceId"
         startActivity(WriteTagActivity.createItemUpdateIntent(
             this, item.name, state, mappedState, item.label, deviceId))

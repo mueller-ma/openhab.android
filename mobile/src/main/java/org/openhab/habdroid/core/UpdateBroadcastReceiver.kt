@@ -40,7 +40,9 @@ import org.openhab.habdroid.util.getDayNightMode
 import org.openhab.habdroid.util.getPrefs
 import org.openhab.habdroid.util.getSecretPrefs
 import org.openhab.habdroid.util.getStringOrNull
+import org.openhab.habdroid.util.putActiveServerId
 import org.openhab.habdroid.util.putConfiguredServerIds
+import org.openhab.habdroid.util.putPrimaryServerId
 
 class UpdateBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -139,8 +141,8 @@ class UpdateBroadcastReceiver : BroadcastReceiver() {
                     config.saveToPrefs(prefs, secretPrefs)
                     prefs.edit {
                         putConfiguredServerIds(setOf(config.id))
-                        putInt(PrefKeys.ACTIVE_SERVER_ID, config.id)
-                        putInt(PrefKeys.PRIMARY_SERVER_ID, config.id)
+                        putActiveServerId(config.id)
+                        putPrimaryServerId(config.id)
                         remove("default_openhab_url")
                         remove("default_openhab_alturl")
                         remove("default_openhab_sslclientcert")

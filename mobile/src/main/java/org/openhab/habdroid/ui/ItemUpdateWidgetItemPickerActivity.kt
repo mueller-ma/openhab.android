@@ -30,7 +30,8 @@ import org.openhab.habdroid.util.CacheManager
 class ItemUpdateWidgetItemPickerActivity(
     override var hintMessageId: Int = 0,
     override var hintButtonMessageId: Int = 0,
-    override var hintIconId: Int = 0
+    override var hintIconId: Int = 0,
+    override val multiServerSupport: Boolean = false
 ) : AbstractItemPickerActivity(), View.OnClickListener {
     @LayoutRes override val additionalConfigLayoutRes: Int = R.layout.widget_item_picker_config
 
@@ -68,7 +69,7 @@ class ItemUpdateWidgetItemPickerActivity(
         }
     }
 
-    override fun finish(item: Item, state: String, mappedState: String, tag: Any?) {
+    override fun finish(item: Item, state: String, mappedState: String, tag: Any?, serverId: Int) {
         val widgetLabel = if (autoGenSwitch.isChecked) {
             null
         } else {

@@ -24,7 +24,8 @@ import org.openhab.habdroid.model.Item
 class TileItemPickerActivity(
     override var hintMessageId: Int = 0,
     override var hintButtonMessageId: Int = 0,
-    override var hintIconId: Int = 0
+    override var hintIconId: Int = 0,
+    override val multiServerSupport: Boolean = false
 ) : AbstractItemPickerActivity() {
     @LayoutRes override val additionalConfigLayoutRes: Int = 0
 
@@ -33,7 +34,7 @@ class TileItemPickerActivity(
         super.onCreate(savedInstanceState)
     }
 
-    override fun finish(item: Item, state: String, mappedState: String, tag: Any?) {
+    override fun finish(item: Item, state: String, mappedState: String, tag: Any?, serverId: Int) {
         val label = if (item.label.isNullOrEmpty()) item.name else item.label
         val resultIntent = Intent().apply {
             putExtra("item", item.name)

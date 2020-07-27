@@ -7,4 +7,11 @@
         android:title="@string/search"
         app:showAsAction="always"
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
+    <item
+        android:id="@+id/server_selector"
+        android:title="@string/item_picker_selected_server"
+        app:showAsAction="always">
+        <menu>
+        </menu>
+    </item>
 </menu>

@@ -34,7 +34,8 @@ import org.openhab.habdroid.util.showToast
 class TaskerItemPickerActivity(
     override var hintMessageId: Int = R.string.settings_tasker_plugin_summary,
     override var hintButtonMessageId: Int = R.string.turn_on,
-    override var hintIconId: Int = R.drawable.ic_connection_error
+    override var hintIconId: Int = R.drawable.ic_connection_error,
+    override val multiServerSupport: Boolean = false
 ) : AbstractItemPickerActivity(), View.OnClickListener {
     private var relevantVars: Array<String>? = null
     private lateinit var commandButton: MaterialButton
@@ -88,7 +89,7 @@ class TaskerItemPickerActivity(
         }
     }
 
-    override fun finish(item: Item, state: String, mappedState: String, tag: Any?) {
+    override fun finish(item: Item, state: String, mappedState: String, tag: Any?, serverId: Int) {
         var asCommand = commandButton.isChecked
 
         if (asCommand && item.type == Item.Type.Contact) {

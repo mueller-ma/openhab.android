@@ -471,6 +471,7 @@
     <string name="item_picker_item_update">Update</string>
     <string name="item_picker_item_command">Command</string>
     <string name="item_picker_contact_no_command">Contact Items cannot receive Item commands, changed to update</string>
+    <string name="item_picker_selected_server">Selected server</string>
     <string name="search">Search</string>
     <string name="settings_tasker_plugin">Tasker integration</string>
     <string name="settings_tasker_plugin_summary">Enable Tasker action plugin which allows updating Items via Tasker or other compatible apps</string>

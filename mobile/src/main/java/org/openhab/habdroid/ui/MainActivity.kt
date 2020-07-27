@@ -118,6 +118,7 @@ import org.openhab.habdroid.util.isEventListenerEnabled
 import org.openhab.habdroid.util.isResolvable
 import org.openhab.habdroid.util.isScreenTimerDisabled
 import org.openhab.habdroid.util.openInAppStore
+import org.openhab.habdroid.util.putActiveServerId
 import org.openhab.habdroid.util.updateDefaultSitemap
 import java.nio.charset.Charset
 import java.util.concurrent.CancellationException
@@ -729,7 +730,7 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
             }
             if (item.groupId == R.id.servers) {
                 prefs.edit {
-                    putInt(PrefKeys.ACTIVE_SERVER_ID, item.itemId)
+                    putActiveServerId(item.itemId)
                 }
                 updateServerNameInDrawer()
                 // Menu views aren't updated in a click handler, so defer the menu update
