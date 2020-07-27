@@ -573,6 +573,7 @@ class PreferencesActivity : AbstractBaseActivity() {
 
     class ServerEditorFragment : AbstractSettingsFragment() {
         private lateinit var config: ServerConfiguration
+        private var markAsPrimary = false
 
         override val titleResId: Int get() = R.string.settings_edit_server
 
@@ -597,6 +598,9 @@ class PreferencesActivity : AbstractBaseActivity() {
                         return true
                     }
                     config.saveToPrefs(prefs, secretPrefs)
+                    if (markAsPrimary) {
+                        prefs.edit().putPrimaryServerId(config.id)
+                    }
                     parentActivity.invalidateOptionsMenu()
                     parentFragmentManager.popBackStack() // close ourself
                     true
@@ -681,14 +685,20 @@ class PreferencesActivity : AbstractBaseActivity() {
                 true
             }
 
-            val primaryServerPref = getPreference(PrefKeys.PRIMARY_SERVER_PREF)
-            updatePrimaryServerPrefState(primaryServerPref, config.id == prefs.getPrimaryServerId())
-            primaryServerPref.setOnPreferenceClickListener {
-                prefs.edit {
-                    putPrimaryServerId(config.id)
+            if (prefs.getConfiguredServerIds().isEmpty()) {
+                preferenceScreen.removePreferenceRecursively(PrefKeys.PRIMARY_SERVER_PREF)
+            } else {
+                val primaryServerPref = getPreference(PrefKeys.PRIMARY_SERVER_PREF)
+                updatePrimaryServerPrefState(primaryServerPref, config.id == prefs.getPrimaryServerId())
+                primaryServerPref.setOnPreferenceClickListener {
+                    if (prefs.getConfiguredServerIds().contains(config.id)) {
+                        prefs.edit().putPrimaryServerId(config.id)
+                    } else {
+                        markAsPrimary = true
+                    }
+                    updatePrimaryServerPrefState(primaryServerPref, true)
+                    true
                 }
-                updatePrimaryServerPrefState(primaryServerPref, true)
-                true
             }
         }
 
