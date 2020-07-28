@@ -14,6 +14,7 @@
     <string name="mainmenu_openhab_sitemaps">Sitemaps</string>
     <string name="mainmenu_openhab_preferences">Settings</string>
     <string name="mainmenu_openhab_habpanel">HABPanel</string>
+    <string name="mainmenu_openhab_habpanel_on_server">HABPanel (%s)</string>
     <string name="habpanel_error">An error occurred while loading HABPanel</string>
     <string name="mainmenu_openhab_selectsitemap">Select default Sitemap</string>
     <string name="mainmenu_openhab_clearcache">Clear images cache</string>
