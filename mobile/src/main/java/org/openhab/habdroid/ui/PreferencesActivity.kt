@@ -54,6 +54,8 @@ import com.jaredrummler.android.colorpicker.ColorPreferenceCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.json.JSONException
+import org.json.JSONObject
 import org.openhab.habdroid.R
 import org.openhab.habdroid.background.BackgroundTasksManager
 import org.openhab.habdroid.background.BackgroundTasksManager.Companion.buildWorkerTagForServer
@@ -76,6 +78,7 @@ import org.openhab.habdroid.ui.preference.NotificationPollingPreference
 import org.openhab.habdroid.ui.preference.SslClientCertificatePreference
 import org.openhab.habdroid.ui.preference.TileItemAndStatePreference
 import org.openhab.habdroid.util.CacheManager
+import org.openhab.habdroid.util.HttpClient
 import org.openhab.habdroid.util.PrefKeys
 import org.openhab.habdroid.util.ToastType
 import org.openhab.habdroid.util.Util
@@ -486,9 +489,11 @@ class PreferencesActivity : AbstractBaseActivity() {
 
         private fun updateNotificationStatusSummaries() {
             parentActivity.launch {
-                notificationPollingPref?.updateSummary()
+                notificationPollingPref?.updateSummaryAndIcon()
                 notificationStatusHint?.apply {
-                    summary = CloudMessagingHelper.getPushNotificationStatus(this.context).message
+                    val data = CloudMessagingHelper.getPushNotificationStatus(this.context)
+                    summary = data.message
+                    setIcon(data.icon)
                 }
             }
         }
@@ -706,6 +711,39 @@ class PreferencesActivity : AbstractBaseActivity() {
                     }
                     updatePrimaryServerPrefState(primaryServerPref, true)
                     true
+                }
+            }
+
+            if (config.id !in prefs.getConfiguredServerIds()) {
+                preferenceScreen.removePreferenceRecursively("api_version")
+            } else {
+                val scope = activity as PreferencesActivity
+                val httpClient = ConnectionFactory.activeUsableConnection?.connection?.httpClient // TODO: Use correct server
+                val apiVersionPref = getPreference("api_version")
+                if (httpClient == null) {
+                    apiVersionPref.setSummary(R.string.error_about_no_conn)
+                } else {
+                    apiVersionPref.setSummary(R.string.list_loading_message)
+                    scope.launch {
+                        try {
+                            val response = httpClient.get("rest").asText().response
+                            var version = ""
+                            try {
+                                val pageJson = JSONObject(response)
+                                version = pageJson.getString("version")
+                            } catch (e: JSONException) {
+                                Log.e(TAG, "Problem fetching version string", e)
+                            }
+                            if (version.isEmpty()) {
+                                version = getString(R.string.unknown)
+                            }
+                            Log.d(TAG, "Got api version $version")
+                            apiVersionPref.summary = version
+                        } catch (e: HttpClient.HttpException) {
+                            Log.e(TAG, "Could not rest API version $e")
+                            apiVersionPref.setSummary(R.string.error_about_no_conn)
+                        }
+                    }
                 }
             }
         }

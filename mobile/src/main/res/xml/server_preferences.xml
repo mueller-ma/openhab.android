@@ -43,4 +43,8 @@
         android:key="primary_server_pref"
         android:icon="@drawable/ic_star_border_grey_24dp"
         android:title="@string/settings_server_primary_title" />
+    <Preference
+        android:key="api_version"
+        android:title="@string/info_openhab_apiversion_label"
+        android:enabled="false" />
 </PreferenceScreen>
