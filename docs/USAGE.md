@@ -288,6 +288,7 @@ Features, that support multiple servers:
 * Show a list of recent notifications
 * Item widgets and Sitemap shortcuts on the home screen
 * Shortcuts for HABPanel (dynamic and pinned), notifications and voice command
+* Tasker plugin
 
 Features, that don't support multiple servers:
 * Voice command widgets
@@ -295,7 +296,6 @@ Features, that don't support multiple servers:
 * NFC tags
 * Push notifications
 * Send device information to openHAB
-* Tasker plugin
 * Setting the device identifier on a per server basis // Note: This is probably a "won't fix"
 
 ## Help and Technical Details

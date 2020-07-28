@@ -467,8 +467,12 @@
     <string name="item_picker_dialog_title">Select action</string>
     <!-- %1$s: Item label, %2$s: Item name, %3$s: State -->
     <string name="item_picker_blurb_command">Send command \"%3$s\" to \"%1$s\" (%2$s)</string>
+    <!-- %1$s: Item label, %2$s: Item name, %3$s: State, %4$s Server name -->
+    <string name="item_picker_blurb_command_multi_server">Send command \"%3$s\" to \"%1$s\" (%2$s) on \"%4$s\"</string>
     <!-- %1$s: Item label, %2$s: Item name, %3$s: State -->
     <string name="item_picker_blurb_update">Update \"%1$s\" (%2$s) to \"%3$s\"</string>
+    <!-- %1$s: Item label, %2$s: Item name, %3$s: State, %4$s Server name -->
+    <string name="item_picker_blurb_update_multi_server">Update \"%1$s\" (%2$s) to \"%3$s\" on \"%4$s\"</string>
     <string name="item_picker_tasker_variable">Tasker variable \"%s\"</string>
     <string name="item_picker_item_update">Update</string>
     <string name="item_picker_item_command">Command</string>

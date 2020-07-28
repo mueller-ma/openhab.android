@@ -63,7 +63,7 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
     override val forceNonFullscreen = true
 
     private var requestJob: Job? = null
-    private lateinit var prefs: SharedPreferences
+    protected lateinit var prefs: SharedPreferences
     protected var initialHighlightItemName: String? = null
     private var requiredServerId = 0
 

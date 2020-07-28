@@ -49,6 +49,7 @@ import org.openhab.habdroid.background.tiles.AbstractTileService
 import org.openhab.habdroid.background.tiles.TileData
 import org.openhab.habdroid.core.CloudMessagingHelper
 import org.openhab.habdroid.model.NfcTag
+import org.openhab.habdroid.model.ServerConfiguration
 import org.openhab.habdroid.ui.TaskerItemPickerActivity
 import org.openhab.habdroid.ui.homescreenwidget.ItemUpdateWidget
 import org.openhab.habdroid.ui.preference.toItemUpdatePrefValue
@@ -147,6 +148,8 @@ class BackgroundTasksManager : BroadcastReceiver() {
                 val state = bundle.getString(TaskerItemPickerActivity.EXTRA_ITEM_STATE)
                 val mappedState = bundle.getString(TaskerItemPickerActivity.EXTRA_ITEM_MAPPED_STATE)
                 val asCommand = bundle.getBoolean(TaskerItemPickerActivity.EXTRA_ITEM_AS_COMMAND, true)
+                val serverId = bundle.getInt(TaskerItemPickerActivity.EXTRA_SERVER_ID,
+                    ServerConfiguration.SERVER_ID_PRIMARY)
                 if (itemName.isNullOrEmpty() || state.isNullOrEmpty()) {
                     return
                 }
@@ -159,7 +162,8 @@ class BackgroundTasksManager : BroadcastReceiver() {
                     isImportant = false,
                     showToast = false,
                     taskerIntent = intent.getStringExtra(TaskerPlugin.Setting.EXTRA_PLUGIN_COMPLETION_INTENT),
-                    asCommand = asCommand
+                    asCommand = asCommand,
+                    serverId = serverId
                 )
                 if (isOrderedBroadcast) {
                     resultCode = TaskerPlugin.Setting.RESULT_CODE_PENDING

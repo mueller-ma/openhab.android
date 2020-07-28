@@ -23,11 +23,14 @@ import androidx.core.os.bundleOf
 import com.google.android.material.button.MaterialButton
 import org.openhab.habdroid.R
 import org.openhab.habdroid.model.Item
+import org.openhab.habdroid.model.ServerConfiguration
 import org.openhab.habdroid.util.PrefKeys
 import org.openhab.habdroid.util.SuggestedCommandsFactory
 import org.openhab.habdroid.util.TaskerIntent
 import org.openhab.habdroid.util.TaskerPlugin
+import org.openhab.habdroid.util.getConfiguredServerIds
 import org.openhab.habdroid.util.getPrefs
+import org.openhab.habdroid.util.getSecretPrefs
 import org.openhab.habdroid.util.isTaskerPluginEnabled
 import org.openhab.habdroid.util.showToast
 
@@ -35,7 +38,7 @@ class TaskerItemPickerActivity(
     override var hintMessageId: Int = R.string.settings_tasker_plugin_summary,
     override var hintButtonMessageId: Int = R.string.turn_on,
     override var hintIconId: Int = R.drawable.ic_connection_error,
-    override val multiServerSupport: Boolean = false
+    override val multiServerSupport: Boolean = true
 ) : AbstractItemPickerActivity(), View.OnClickListener {
     private var relevantVars: Array<String>? = null
     private lateinit var commandButton: MaterialButton
@@ -102,12 +105,21 @@ class TaskerItemPickerActivity(
             EXTRA_ITEM_LABEL to item.label,
             EXTRA_ITEM_STATE to state,
             EXTRA_ITEM_MAPPED_STATE to mappedState,
-            EXTRA_ITEM_AS_COMMAND to asCommand
+            EXTRA_ITEM_AS_COMMAND to asCommand,
+            EXTRA_SERVER_ID to serverId
         )
         val resultIntent = Intent().apply {
-            @StringRes val blurbRes =
-                if (asCommand) R.string.item_picker_blurb_command else R.string.item_picker_blurb_update
-            val blurb = getString(blurbRes, item.label, item.name, state)
+            val configuredServers = prefs.getConfiguredServerIds()
+            val blurb = if (configuredServers.size <= 1) {
+                @StringRes val blurbRes = if (asCommand) R.string.item_picker_blurb_command
+                else R.string.item_picker_blurb_update
+                getString(blurbRes, item.label, item.name, state)
+            } else {
+                @StringRes val blurbRes = if (asCommand) R.string.item_picker_blurb_command_multi_server
+                else R.string.item_picker_blurb_update_multi_server
+                val serverName = ServerConfiguration.load(prefs, getSecretPrefs(), serverId)?.name
+                getString(blurbRes, item.label, item.name, state, serverName)
+            }
             putExtra(TaskerIntent.EXTRA_STRING_BLURB, blurb)
             putExtra(TaskerIntent.EXTRA_BUNDLE, resultBundle)
         }
@@ -136,15 +148,15 @@ class TaskerItemPickerActivity(
         const val EXTRA_ITEM_LABEL = "itemLabel"
         const val EXTRA_ITEM_STATE = "itemState"
         const val EXTRA_ITEM_MAPPED_STATE = "itemMappedState"
+        const val EXTRA_ITEM_AS_COMMAND = "asCommand"
+        const val EXTRA_SERVER_ID = "serverId"
 
+        const val VAR_HTTP_CODE = "%httpcode"
         const val RESULT_CODE_PLUGIN_DISABLED = TaskerPlugin.Setting.RESULT_CODE_FAILED_PLUGIN_FIRST
         const val RESULT_CODE_NO_CONNECTION = TaskerPlugin.Setting.RESULT_CODE_FAILED_PLUGIN_FIRST + 1
         fun getResultCodeForHttpFailure(httpCode: Int): Int {
             return 1000 + httpCode
         }
-
-        const val VAR_HTTP_CODE = "%httpcode"
-        const val EXTRA_ITEM_AS_COMMAND = "asCommand"
     }
 
     override fun onClick(view: View) {
