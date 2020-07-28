@@ -34,6 +34,7 @@ import org.openhab.habdroid.background.NotificationUpdateObserver.Companion.NOTI
 import org.openhab.habdroid.core.connection.Connection
 import org.openhab.habdroid.core.connection.ConnectionFactory
 import org.openhab.habdroid.model.Item
+import org.openhab.habdroid.model.ServerConfiguration
 import org.openhab.habdroid.model.toItem
 import org.openhab.habdroid.ui.TaskerItemPickerActivity
 import org.openhab.habdroid.util.HttpClient
@@ -70,11 +71,12 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
         val requiredServerId = inputData.getInt(INPUT_DATA_SERVER_ID, 0)
         val prefs = applicationContext.getPrefs()
         val connection = when (requiredServerId) {
-            0, prefs.getPrimaryServerId() -> ConnectionFactory.primaryUsableConnection?.connection
-            prefs.getActiveServerId() -> ConnectionFactory.activeUsableConnection?.connection
+            ServerConfiguration.SERVER_ID_PRIMARY, prefs.getPrimaryServerId() ->
+                ConnectionFactory.primaryUsableConnection?.connection
+            ServerConfiguration.SERVER_ID_CURRENT_ACTIVE, prefs.getActiveServerId() ->
+                ConnectionFactory.activeUsableConnection?.connection
             !in prefs.getConfiguredServerIds() -> {
-                Log.w(TAG, "Server with id $requiredServerId doesn't exist")
-                return Result.success(buildOutputData(false, 500))
+                throw IllegalArgumentException("Server with id $requiredServerId doesn't exist")
             }
             else -> {
                 Log.d(TAG, "Set server with id $requiredServerId as active")
