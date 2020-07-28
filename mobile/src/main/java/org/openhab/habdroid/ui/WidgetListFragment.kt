@@ -65,6 +65,7 @@ import org.openhab.habdroid.util.SuggestedCommandsFactory
 import org.openhab.habdroid.util.ToastType
 import org.openhab.habdroid.util.Util
 import org.openhab.habdroid.util.dpToPixel
+import org.openhab.habdroid.util.getActiveServerId
 import org.openhab.habdroid.util.getPrefs
 import org.openhab.habdroid.util.getStringOrEmpty
 import org.openhab.habdroid.util.openInBrowser
@@ -449,7 +450,8 @@ class WidgetListFragment : Fragment(), WidgetAdapter.ItemClickListener,
                 widget.item.label.orEmpty(),
                 null,
                 mappedState,
-                widget.icon
+                widget.icon,
+                context.getPrefs().getActiveServerId()
             )
 
             val callbackIntent = Intent(context, ItemUpdateWidget::class.java).apply {

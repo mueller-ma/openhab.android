@@ -193,7 +193,8 @@ class BackgroundTasksManager : BroadcastReceiver() {
         val isImportant: Boolean,
         val showToast: Boolean,
         val taskerIntent: String?,
-        val asCommand: Boolean
+        val asCommand: Boolean,
+        val serverId: Int
     ) : Parcelable
 
     private class PrefsListener constructor(private val context: Context) :
@@ -234,6 +235,7 @@ class BackgroundTasksManager : BroadcastReceiver() {
         private const val WORKER_TAG_PERIODIC_TRIGGER = "periodicTrigger"
         private const val WORKER_TAG_PERIODIC_TRIGGER_NOT_CHARGING = "periodicTriggerNotCharging"
         private const val WORKER_TAG_PERIODIC_TRIGGER_CHARGING = "periodicTriggerCharging"
+        const val WORKER_TAG_PREFIX_SERVER = "server-id-"
         const val WORKER_TAG_PREFIX_NFC = "nfc-"
         const val WORKER_TAG_PREFIX_TASKER = "tasker-"
         const val WORKER_TAG_PREFIX_WIDGET = "widget-"
@@ -339,7 +341,8 @@ class BackgroundTasksManager : BroadcastReceiver() {
                     ItemUpdateWorker.ValueWithInfo(data.state, data.mappedState),
                     isImportant = true,
                     showToast = true,
-                    asCommand = true
+                    asCommand = true,
+                    serverId = data.serverId
                 )
             }
         }
@@ -482,19 +485,29 @@ class BackgroundTasksManager : BroadcastReceiver() {
             isImportant: Boolean,
             showToast: Boolean,
             taskerIntent: String? = null,
-            asCommand: Boolean
+            asCommand: Boolean,
+            serverId: Int = 0
         ) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
-            val inputData =
-                ItemUpdateWorker.buildData(itemName, label, value, showToast, taskerIntent, asCommand, isImportant)
+            val inputData = ItemUpdateWorker.buildData(
+                itemName,
+                label,
+                value,
+                showToast,
+                taskerIntent,
+                asCommand,
+                isImportant,
+                serverId
+            )
             val workRequest = OneTimeWorkRequest.Builder(ItemUpdateWorker::class.java)
                 .setConstraints(constraints)
                 .setBackoffCriteria(if (isImportant) BackoffPolicy.LINEAR else BackoffPolicy.EXPONENTIAL,
                     WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
                 .addTag(tag)
                 .addTag(WORKER_TAG_ITEM_UPLOADS)
+                .addTag("${WORKER_TAG_PREFIX_SERVER}$serverId")
                 .setInputData(inputData)
                 .build()
 

@@ -49,9 +49,14 @@ import org.openhab.habdroid.util.HttpClient
 import org.openhab.habdroid.util.ImageConversionPolicy
 import org.openhab.habdroid.util.ToastType
 import org.openhab.habdroid.util.dpToPixel
+import org.openhab.habdroid.util.getActiveServerId
+import org.openhab.habdroid.util.getConfiguredServerIds
+import org.openhab.habdroid.util.getPrefs
+import org.openhab.habdroid.util.getPrimaryServerId
 import org.openhab.habdroid.util.getStringOrEmpty
 import org.openhab.habdroid.util.getStringOrNull
 import org.openhab.habdroid.util.isSvg
+import org.openhab.habdroid.util.putActiveServerId
 import org.openhab.habdroid.util.showToast
 import org.openhab.habdroid.util.svgToBitmap
 import java.io.ByteArrayInputStream
@@ -225,7 +230,24 @@ open class ItemUpdateWidget : AppWidgetProvider() {
                 } else {
                     Log.d(TAG, "Download icon")
                     ConnectionFactory.waitForInitialization()
-                    val connection = ConnectionFactory.primaryUsableConnection?.connection
+                    val prefs = context.getPrefs()
+                    val connection = when (data.serverId) {
+                        0, prefs.getPrimaryServerId() -> ConnectionFactory.primaryUsableConnection?.connection
+                        prefs.getActiveServerId() -> ConnectionFactory.activeUsableConnection?.connection
+                        !in prefs.getConfiguredServerIds() -> {
+                            Log.w(TAG, "Server with id ${data.serverId} doesn't exist")
+                            return@launch
+                        }
+                        else -> {
+                            Log.d(TAG, "Set server with id ${data.serverId} as active")
+                            prefs.edit {
+                                putActiveServerId(data.serverId)
+                            }
+                            ConnectionFactory.waitForInitialization()
+                            ConnectionFactory.activeUsableConnection?.connection
+                        }
+                    }
+
                     if (connection == null) {
                         Log.d(TAG, "Got no connection")
                         return@launch
@@ -264,7 +286,8 @@ open class ItemUpdateWidget : AppWidgetProvider() {
             val widgetLabel = prefs.getStringOrNull(PreferencesActivity.ITEM_UPDATE_WIDGET_WIDGET_LABEL)
             val mappedState = prefs.getStringOrEmpty(PreferencesActivity.ITEM_UPDATE_WIDGET_MAPPED_STATE)
             val icon = prefs.getIconResource(PreferencesActivity.ITEM_UPDATE_WIDGET_ICON)
-            return ItemUpdateWidgetData(item, state, label, widgetLabel, mappedState, icon)
+            val serverId = prefs.getInt(PreferencesActivity.ITEM_UPDATE_WIDGET_SERVER_ID, 0)
+            return ItemUpdateWidgetData(item, state, label, widgetLabel, mappedState, icon, serverId)
         }
 
         fun saveInfoForWidget(
@@ -278,6 +301,7 @@ open class ItemUpdateWidget : AppWidgetProvider() {
                 putString(PreferencesActivity.ITEM_UPDATE_WIDGET_LABEL, data.label)
                 putString(PreferencesActivity.ITEM_UPDATE_WIDGET_WIDGET_LABEL, data.widgetLabel)
                 putString(PreferencesActivity.ITEM_UPDATE_WIDGET_MAPPED_STATE, data.mappedState)
+                putInt(PreferencesActivity.ITEM_UPDATE_WIDGET_SERVER_ID, data.serverId)
                 putIconResource(PreferencesActivity.ITEM_UPDATE_WIDGET_ICON, data.icon)
             }
         }
@@ -331,6 +355,7 @@ open class ItemUpdateWidget : AppWidgetProvider() {
         val label: String,
         val widgetLabel: String?,
         val mappedState: String,
-        val icon: IconResource?
+        val icon: IconResource?,
+        val serverId : Int
     ) : Parcelable
 }

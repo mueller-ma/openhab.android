@@ -1204,6 +1204,7 @@ class PreferencesActivity : AbstractBaseActivity() {
         const val ITEM_UPDATE_WIDGET_WIDGET_LABEL = "widgetLabel"
         const val ITEM_UPDATE_WIDGET_MAPPED_STATE = "mappedState"
         const val ITEM_UPDATE_WIDGET_ICON = "icon"
+        const val ITEM_UPDATE_WIDGET_SERVER_ID = "serverId"
         private const val STATE_KEY_RESULT = "result"
         private const val PERMISSIONS_REQUEST_FOR_CALL_STATE = 0
         private const val PERMISSIONS_REQUEST_FOR_WIFI_NAME = 1

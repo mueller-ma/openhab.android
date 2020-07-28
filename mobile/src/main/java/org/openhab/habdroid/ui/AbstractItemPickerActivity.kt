@@ -13,6 +13,7 @@
 
 package org.openhab.habdroid.ui
 
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
@@ -50,7 +51,6 @@ import org.openhab.habdroid.ui.widget.DividerItemDecoration
 import org.openhab.habdroid.util.HttpClient
 import org.openhab.habdroid.util.PrefKeys
 import org.openhab.habdroid.util.SuggestedCommandsFactory
-import org.openhab.habdroid.util.getActiveServerId
 import org.openhab.habdroid.util.getConfiguredServerIds
 import org.openhab.habdroid.util.getPrefs
 import org.openhab.habdroid.util.getPrimaryServerId
@@ -63,9 +63,9 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
     override val forceNonFullscreen = true
 
     private var requestJob: Job? = null
-    private val prefs = getPrefs()
+    private lateinit var prefs: SharedPreferences
     protected var initialHighlightItemName: String? = null
-    private var usedServerId = 0
+    private var requiredServerId = 0
 
     private lateinit var itemPickerAdapter: ItemPickerAdapter
     private lateinit var recyclerView: RecyclerView
@@ -76,6 +76,7 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
     private lateinit var emptyMessage: TextView
     private lateinit var watermark: ImageView
     private lateinit var searchView: SearchView
+    private var serverSelector: MenuItem? = null
     protected lateinit var retryButton: Button
     protected abstract var hintMessageId: Int
     protected abstract var hintButtonMessageId: Int
@@ -91,6 +92,7 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefs = getPrefs()
 
         setContentView(R.layout.activity_item_picker)
         setResult(RESULT_CANCELED)
@@ -153,25 +155,20 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
         searchView.setOnQueryTextListener(this)
 
         val configuredServers = prefs.getConfiguredServerIds()
-        val serverSelector = menu.findItem(R.id.server_selector)
+        serverSelector = menu.findItem(R.id.server_selector)
         if (configuredServers.size <= 1 || !multiServerSupport) {
-            serverSelector.isVisible = false
-            usedServerId = prefs.getPrimaryServerId()
+            serverSelector?.isVisible = false
+            requiredServerId = prefs.getPrimaryServerId()
         } else {
-            usedServerId = prefs.getActiveServerId()
-            val activeServerName = ServerConfiguration.load(prefs, getSecretPrefs(), usedServerId)?.name
-            serverSelector.title = getString(R.string.server_with_name, activeServerName)
+            switchServer(requiredServerId)
+            val requiredServerName = ServerConfiguration.load(prefs, getSecretPrefs(), requiredServerId)?.name
+            serverSelector?.title = getString(R.string.server_with_name, requiredServerName)
 
             configuredServers.forEach { id ->
                 ServerConfiguration.load(prefs, getSecretPrefs(), id)?.let { config ->
-                    serverSelector.subMenu.add(id, id, id, getString(R.string.server_with_name, config.name))
-                        .setOnMenuItemClickListener { item ->
-                            prefs.edit {
-                                putActiveServerId(item.itemId)
-                            }
-                            usedServerId = id
-                            serverSelector.title = getString(R.string.server_with_name, config.name)
-                            loadItems()
+                    serverSelector?.subMenu?.add(id, id, id, getString(R.string.server_with_name, config.name))
+                        ?.setOnMenuItemClickListener { item ->
+                            switchServer(item.itemId)
                             true
                         }
                 }
@@ -179,6 +176,15 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
         }
 
         return true
+    }
+
+    protected fun switchServer(serverId: Int) {
+        requiredServerId = serverId
+        serverSelector?.let {
+            val activeServerName = ServerConfiguration.load(prefs, getSecretPrefs(), serverId)?.name
+            it.title = getString(R.string.server_with_name, activeServerName)
+            loadItems()
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -273,11 +279,14 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
         itemPickerAdapter.clear()
 
         requestJob = launch {
-            ConnectionFactory.waitForInitialization()
-
             val connection = if (multiServerSupport) {
+                prefs.edit {
+                    putActiveServerId(requiredServerId)
+                }
+                ConnectionFactory.waitForInitialization()
                 ConnectionFactory.activeUsableConnection?.connection
             } else {
+                ConnectionFactory.waitForInitialization()
                 ConnectionFactory.primaryUsableConnection?.connection
             }
             if (connection == null) {
@@ -333,7 +342,7 @@ abstract class AbstractItemPickerActivity : AbstractBaseActivity(), SwipeRefresh
         state: String,
         mappedState: String = state,
         tag: Any? = null,
-        serverId: Int = usedServerId
+        serverId: Int = requiredServerId
     )
 
     private fun handleInitialHighlight() {

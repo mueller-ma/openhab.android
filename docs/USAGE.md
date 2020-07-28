@@ -286,9 +286,10 @@ Features, that support multiple servers:
 * Display Sitemaps and HABPanel
 * In-app voice commands
 * Show a list of recent notifications
+* Item widgets on the home screen
 
 Features, that don't support multiple servers:
-* Sitemap shortcuts and Item widgets on the home screen
+* Sitemap shortcuts on the home screen
 * Shortcuts for HABPanel, notifications and voice command
 * Voice command widgets
 * Quick tiles

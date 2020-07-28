@@ -99,6 +99,7 @@ internal class NotificationUpdateObserver(context: Context) : Observer<List<Work
                 val asCommand = data.getBoolean(ItemUpdateWorker.OUTPUT_DATA_AS_COMMAND, false)
                 val hadConnection = data.getBoolean(ItemUpdateWorker.OUTPUT_DATA_HAS_CONNECTION, false)
                 val httpStatus = data.getInt(ItemUpdateWorker.OUTPUT_DATA_HTTP_STATUS, 0)
+                val serverId = data.getInt(ItemUpdateWorker.OUTPUT_DATA_SERVER_ID, 0)
 
                 if (itemName != null && value != null) {
                     retryInfoList.add(
@@ -110,7 +111,8 @@ internal class NotificationUpdateObserver(context: Context) : Observer<List<Work
                             isImportant,
                             showToast,
                             taskerIntent,
-                            asCommand
+                            asCommand,
+                            serverId
                         )
                     )
                 }

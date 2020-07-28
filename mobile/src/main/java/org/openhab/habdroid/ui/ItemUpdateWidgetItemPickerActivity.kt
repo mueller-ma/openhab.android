@@ -31,7 +31,7 @@ class ItemUpdateWidgetItemPickerActivity(
     override var hintMessageId: Int = 0,
     override var hintButtonMessageId: Int = 0,
     override var hintIconId: Int = 0,
-    override val multiServerSupport: Boolean = false
+    override val multiServerSupport: Boolean = true
 ) : AbstractItemPickerActivity(), View.OnClickListener {
     @LayoutRes override val additionalConfigLayoutRes: Int = R.layout.widget_item_picker_config
 
@@ -47,20 +47,35 @@ class ItemUpdateWidgetItemPickerActivity(
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
 
-        var data: ItemUpdateWidget.ItemUpdateWidgetData? = null
-        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            data = ItemUpdateWidget.getInfoForWidget(this, appWidgetId)
-            initialHighlightItemName = data.item
-        }
-
         autoGenSwitch = findViewById(R.id.auto_gen_label_switch)
         autoGenSwitch.setOnClickListener(this)
         labelEditText = findViewById(android.R.id.edit)
         labelEditTextWrapper = findViewById(R.id.input_wrapper)
+    }
 
-        if (data?.widgetLabel != null) {
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        appWidgetId = intent?.extras?.getInt(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID
+        ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val editData = if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            ItemUpdateWidget.getInfoForWidget(this, appWidgetId)
+        } else {
+            null
+        }
+
+        initialHighlightItemName = editData?.item
+        editData?.let { switchServer(editData.serverId) }
+
+        if (editData?.widgetLabel != null) {
             autoGenSwitch.isChecked = false
-            labelEditText.setText(data.widgetLabel)
+            labelEditText.setText(editData.widgetLabel)
             labelEditTextWrapper.isEnabled = true
         } else {
             autoGenSwitch.isChecked = true
@@ -83,7 +98,8 @@ class ItemUpdateWidgetItemPickerActivity(
             label,
             widgetLabel,
             mappedState,
-            item.category.toOH2IconResource()
+            item.category.toOH2IconResource(),
+            serverId
         )
 
         val oldData = ItemUpdateWidget.getInfoForWidget(this, appWidgetId)

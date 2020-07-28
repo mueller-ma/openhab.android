@@ -19,6 +19,7 @@ import android.os.Parcelable
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.os.bundleOf
 import androidx.work.Data
 import androidx.work.ForegroundInfo
@@ -38,9 +39,13 @@ import org.openhab.habdroid.ui.TaskerItemPickerActivity
 import org.openhab.habdroid.util.HttpClient
 import org.openhab.habdroid.util.TaskerPlugin
 import org.openhab.habdroid.util.ToastType
+import org.openhab.habdroid.util.getActiveServerId
+import org.openhab.habdroid.util.getConfiguredServerIds
 import org.openhab.habdroid.util.getPrefixForVoice
 import org.openhab.habdroid.util.getPrefs
+import org.openhab.habdroid.util.getPrimaryServerId
 import org.openhab.habdroid.util.orDefaultIfEmpty
+import org.openhab.habdroid.util.putActiveServerId
 import org.openhab.habdroid.util.showToast
 import org.xml.sax.InputSource
 import org.xml.sax.SAXException
@@ -57,12 +62,31 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
         if (inputData.getBoolean(INPUT_DATA_IS_IMPORTANT, false)) {
             setForegroundAsync(createForegroundInfo())
         }
+
         runBlocking {
             ConnectionFactory.waitForInitialization()
         }
-
         Log.d(TAG, "Trying to get connection")
-        val connection = ConnectionFactory.primaryUsableConnection?.connection
+        val requiredServerId = inputData.getInt(INPUT_DATA_SERVER_ID, 0)
+        val prefs = applicationContext.getPrefs()
+        val connection = when (requiredServerId) {
+            0, prefs.getPrimaryServerId() -> ConnectionFactory.primaryUsableConnection?.connection
+            prefs.getActiveServerId() -> ConnectionFactory.activeUsableConnection?.connection
+            !in prefs.getConfiguredServerIds() -> {
+                Log.w(TAG, "Server with id $requiredServerId doesn't exist")
+                return Result.success(buildOutputData(false, 500))
+            }
+            else -> {
+                Log.d(TAG, "Set server with id $requiredServerId as active")
+                prefs.edit {
+                    putActiveServerId(requiredServerId)
+                }
+                runBlocking {
+                    ConnectionFactory.waitForInitialization()
+                }
+                ConnectionFactory.activeUsableConnection?.connection
+            }
+        }
 
         val showToast = inputData.getBoolean(INPUT_DATA_SHOW_TOAST, false)
         val taskerIntent = inputData.getString(INPUT_DATA_TASKER_INTENT)
@@ -295,6 +319,7 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
             .putString(OUTPUT_DATA_AS_COMMAND, inputData.getString(INPUT_DATA_AS_COMMAND))
             .putString(OUTPUT_DATA_IS_IMPORTANT, inputData.getString(INPUT_DATA_IS_IMPORTANT))
             .putLong(OUTPUT_DATA_TIMESTAMP, System.currentTimeMillis())
+            .putInt(OUTPUT_DATA_SERVER_ID, inputData.getInt(INPUT_DATA_SERVER_ID, 0))
             .build()
     }
 
@@ -334,6 +359,7 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
         private const val INPUT_DATA_TASKER_INTENT = "taskerIntent"
         private const val INPUT_DATA_AS_COMMAND = "command"
         private const val INPUT_DATA_IS_IMPORTANT = "is_important"
+        private const val INPUT_DATA_SERVER_ID = "server_id"
 
         const val OUTPUT_DATA_HAS_CONNECTION = "hasConnection"
         const val OUTPUT_DATA_HTTP_STATUS = "httpStatus"
@@ -345,6 +371,7 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
         const val OUTPUT_DATA_AS_COMMAND = "command"
         const val OUTPUT_DATA_IS_IMPORTANT = "is_important"
         const val OUTPUT_DATA_TIMESTAMP = "timestamp"
+        const val OUTPUT_DATA_SERVER_ID = "server_id"
 
         fun buildData(
             itemName: String,
@@ -353,7 +380,8 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
             showToast: Boolean,
             taskerIntent: String?,
             asCommand: Boolean,
-            isImportant: Boolean
+            isImportant: Boolean,
+            serverId: Int
         ): Data {
             return Data.Builder()
                 .putString(INPUT_DATA_ITEM_NAME, itemName)
@@ -363,6 +391,7 @@ class ItemUpdateWorker(context: Context, params: WorkerParameters) : Worker(cont
                 .putString(INPUT_DATA_TASKER_INTENT, taskerIntent)
                 .putBoolean(INPUT_DATA_AS_COMMAND, asCommand)
                 .putBoolean(INPUT_DATA_IS_IMPORTANT, isImportant)
+                .putInt(INPUT_DATA_SERVER_ID, serverId)
                 .build()
         }
     }
