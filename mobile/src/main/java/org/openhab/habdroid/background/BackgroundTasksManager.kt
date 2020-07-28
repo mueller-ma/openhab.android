@@ -235,12 +235,12 @@ class BackgroundTasksManager : BroadcastReceiver() {
         private const val WORKER_TAG_PERIODIC_TRIGGER = "periodicTrigger"
         private const val WORKER_TAG_PERIODIC_TRIGGER_NOT_CHARGING = "periodicTriggerNotCharging"
         private const val WORKER_TAG_PERIODIC_TRIGGER_CHARGING = "periodicTriggerCharging"
-        const val WORKER_TAG_PREFIX_SERVER = "server-id-"
         const val WORKER_TAG_PREFIX_NFC = "nfc-"
         const val WORKER_TAG_PREFIX_TASKER = "tasker-"
         const val WORKER_TAG_PREFIX_WIDGET = "widget-"
         const val WORKER_TAG_PREFIX_TILE = "tile-"
         const val WORKER_TAG_VOICE_COMMAND = "voiceCommand"
+        fun buildWorkerTagForServer(id: Int) = "server-id-$id"
 
         internal val KNOWN_KEYS = listOf(
             PrefKeys.SEND_ALARM_CLOCK,
@@ -507,7 +507,7 @@ class BackgroundTasksManager : BroadcastReceiver() {
                     WorkRequest.MIN_BACKOFF_MILLIS, TimeUnit.MILLISECONDS)
                 .addTag(tag)
                 .addTag(WORKER_TAG_ITEM_UPLOADS)
-                .addTag("${WORKER_TAG_PREFIX_SERVER}$serverId")
+                .addTag(buildWorkerTagForServer(serverId))
                 .setInputData(inputData)
                 .build()
 
