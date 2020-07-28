@@ -100,6 +100,7 @@ import org.openhab.habdroid.util.ImageConversionPolicy
 import org.openhab.habdroid.util.PrefKeys
 import org.openhab.habdroid.util.RemoteLog
 import org.openhab.habdroid.util.ScreenLockMode
+import org.openhab.habdroid.util.ToastType
 import org.openhab.habdroid.util.Util
 import org.openhab.habdroid.util.areSitemapsShownInDrawer
 import org.openhab.habdroid.util.getActiveServerId
@@ -109,6 +110,7 @@ import org.openhab.habdroid.util.getGroupItems
 import org.openhab.habdroid.util.getHumanReadableErrorMessage
 import org.openhab.habdroid.util.getNextAvailableServerId
 import org.openhab.habdroid.util.getPrefs
+import org.openhab.habdroid.util.getPrimaryServerId
 import org.openhab.habdroid.util.getSecretPrefs
 import org.openhab.habdroid.util.getStringOrNull
 import org.openhab.habdroid.util.hasPermissions
@@ -119,6 +121,7 @@ import org.openhab.habdroid.util.isResolvable
 import org.openhab.habdroid.util.isScreenTimerDisabled
 import org.openhab.habdroid.util.openInAppStore
 import org.openhab.habdroid.util.putActiveServerId
+import org.openhab.habdroid.util.showToast
 import org.openhab.habdroid.util.updateDefaultSitemap
 import java.nio.charset.Charset
 import java.util.concurrent.CancellationException
@@ -613,7 +616,7 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
 
                 val sitemapUrl = tag?.sitemap
                 if (!sitemapUrl.isNullOrEmpty()) {
-                    executeOrStoreAction(PendingAction.OpenSitemapUrl(sitemapUrl))
+                    executeOrStoreAction(PendingAction.OpenSitemapUrl(sitemapUrl, 0))
                 }
             }
             ACTION_NOTIFICATION_SELECTED -> {
@@ -625,7 +628,8 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
             ACTION_VOICE_RECOGNITION_SELECTED -> executeOrStoreAction(PendingAction.LaunchVoiceRecognition())
             ACTION_SITEMAP_SELECTED -> {
                 val sitemapUrl = intent.getStringExtra(EXTRA_SITEMAP_URL) ?: return
-                executeOrStoreAction(PendingAction.OpenSitemapUrl(sitemapUrl))
+                val serverId = intent.getIntExtra(EXTRA_SERVER_ID, 0)
+                executeOrStoreAction(PendingAction.OpenSitemapUrl(sitemapUrl, serverId))
             }
         }
     }
@@ -897,8 +901,28 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
             true
         }
         action is PendingAction.OpenSitemapUrl && isStarted && serverProperties != null -> {
-            buildUrlAndOpenSitemap(action.url)
-            true
+            when {
+                action.serverId == 0 -> {
+                    prefs.edit {
+                        putActiveServerId(prefs.getPrimaryServerId())
+                    }
+                    false
+                }
+                action.serverId !in prefs.getConfiguredServerIds() -> {
+                    showToast(R.string.home_shortcut_server_has_been_deleted, ToastType.ERROR)
+                    true
+                }
+                prefs.getActiveServerId() != action.serverId -> {
+                    prefs.edit {
+                        putActiveServerId(action.serverId)
+                    }
+                    false
+                }
+                else -> {
+                    buildUrlAndOpenSitemap(action.url)
+                    true
+                }
+            }
         }
         action is PendingAction.OpenHabPanel && isStarted && serverProperties?.hasHabPanelInstalled() == true -> {
             openHabPanel()
@@ -1211,7 +1235,7 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
 
     private sealed class PendingAction {
         class ChooseSitemap : PendingAction()
-        class OpenSitemapUrl constructor(val url: String) : PendingAction()
+        class OpenSitemapUrl constructor(val url: String, val serverId: Int) : PendingAction()
         class OpenHabPanel : PendingAction()
         class LaunchVoiceRecognition : PendingAction()
         class OpenNotification constructor(val notificationId: String, val primary: Boolean) : PendingAction()
@@ -1223,6 +1247,7 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
         const val ACTION_VOICE_RECOGNITION_SELECTED = "org.openhab.habdroid.action.VOICE_SELECTED"
         const val ACTION_SITEMAP_SELECTED = "org.openhab.habdroid.action.SITEMAP_SELECTED"
         const val EXTRA_SITEMAP_URL = "sitemapUrl"
+        const val EXTRA_SERVER_ID = "serverId"
         const val EXTRA_PERSISTED_NOTIFICATION_ID = "persistedNotificationId"
         private const val TAG_SNACKBAR_PRESS_AGAIN_EXIT = "pressAgainToExit"
         private const val TAG_SNACKBAR_CONNECTION_ESTABLISHED = "connectionEstablished"
