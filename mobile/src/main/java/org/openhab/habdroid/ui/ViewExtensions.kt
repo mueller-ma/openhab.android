@@ -14,6 +14,7 @@
 package org.openhab.habdroid.ui
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Message
 import android.view.View
@@ -28,6 +29,8 @@ import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import okhttp3.HttpUrl
 import org.openhab.habdroid.core.connection.Connection
 import org.openhab.habdroid.util.isResolvable
@@ -46,6 +49,12 @@ fun SwipeRefreshLayout.applyColors(@AttrRes vararg colorAttrIds: Int) {
 }
 
 fun WebView.setUpForConnection(connection: Connection, url: HttpUrl, progressCallback: (progress: Int) -> Unit) {
+    val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES &&
+        WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY)) {
+        WebSettingsCompat.setForceDarkStrategy(settings, WebSettingsCompat.DARK_STRATEGY_PREFER_WEB_THEME_OVER_USER_AGENT_DARKENING)
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val webViewDatabase = WebViewDatabase.getInstance(context)
         webViewDatabase.setHttpAuthUsernamePassword(url.host, "", connection.username, connection.password)
