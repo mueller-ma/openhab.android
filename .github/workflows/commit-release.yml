@@ -16,9 +16,15 @@ jobs:
       - name: Bump version
         run: |
           gradle_file="mobile/build.gradle"
+          
+          # Get and bump version code
           currentVersionCode=$(grep 'versionCode' $gradle_file | sed -r 's/(.*) (.*)$/\2/')
           let currentVersionCode++
+          
+          # Remove "-release$" and and "^refs/tags/" from version name
           versionName="${GITHUB_REF%-release}"
+          versionName="${GITHUB_REF##*/}"
+          
           echo "Replace versionCode with $currentVersionCode"
           sed --in-place -r "s/versionCode (.*)/versionCode ${currentVersionCode}/" $gradle_file
           echo "Replace versionName with $versionName"
