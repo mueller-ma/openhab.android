@@ -43,9 +43,11 @@ jobs:
           
       - name: Download release notes
         run: |
-          retryCount=0
+          gradle_file="mobile/build.gradle"
           currentVersionCode=$(grep 'versionCode' $gradle_file | sed -r 's/(.*) (.*)$/\2/')
           echo "Get release notes for version code $currentVersionCode"
+          
+          retryCount=0
           until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
           do
               let retryCount++
@@ -64,7 +66,7 @@ jobs:
           echo "========================"
           
       - name: Commit changes
-        uses: EndBug/add-and-commit@v6 # You can change this to use a specific version
+        uses: EndBug/add-and-commit@v6
         with:
           add: '.'
           author_name: openhab-bot
