@@ -34,14 +34,17 @@ jobs:
         run: |
           if $(echo "$GITHUB_REF" | grep -q "beta")
           then
+              echo "Build store description for beta version on F-Droid"
               python3 assets/store_descriptions/generate_and_validate.py fdroidBeta
           else
+              echo "Build store description for stable version on F-Droid"
               python3 assets/store_descriptions/generate_and_validate.py fdroid
           fi
           
       - name: Download release notes
         run: |
           retryCount=0
+          echo "Get release notes for version code $currentVersionCode"
           until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
           do
               let retryCount++
@@ -52,6 +55,11 @@ jobs:
               echo "Download failed. Retry"
               sleep 5
           done
+          
+          echo "Got release notes:"
+          echo "========================"
+          cat fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
+          echo "========================"
           
       - name: Commit changes
         uses: EndBug/add-and-commit@v6 # You can change this to use a specific version
