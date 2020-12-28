@@ -7,9 +7,6 @@ on:
 
 env:
   GRADLE_FILE: "mobile/build.gradle"
-  VERSION_CODE: 0
-  VERSION_NAME: ""
-  TAG_NAME: ""
   
 jobs:
   build:
@@ -33,6 +30,11 @@ jobs:
           echo "Replace versionName with $VERSION_NAME"
           sed --in-place -r "s/versionName \"(.*)\"/versionName \"${VERSION_NAME}\"/" $GRADLE_FILE
           
+          # Save variables for next steps
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME"         >> $GITHUB_ENV
+          
       - name: Build store description
         run: |
           if $(echo "$GITHUB_REF" | grep -q "beta")
@@ -46,10 +48,10 @@ jobs:
           
       - name: Download release notes
         run: |
-          echo "Get release notes for version code $VERSION_CODE"
+          echo "Get release notes for version code ${{ env.VERSION_CODE }}"
           
           retryCount=0
-          until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt
+          until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${{ env.VERSION_CODE }}.txt
           do
               let retryCount++
               if [ "$retryCount" -gt 20 ]
@@ -63,7 +65,7 @@ jobs:
           echo ""
           echo "Got release notes:"
           echo "========================"
-          cat fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt
+          cat fastlane/metadata/android/en-US/changelogs/${{ env.VERSION_CODE }}.txt
           echo "========================"
           
       - name: Commit changes
