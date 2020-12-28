@@ -4,8 +4,13 @@ on:
   release:
     types:
       - created
-  workflow_dispatch:
 
+env:
+  GRADLE_FILE: "mobile/build.gradle"
+  VERSION_CODE: 0
+  VERSION_NAME: ""
+  TAG_NAME: ""
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,20 +20,18 @@ jobs:
         
       - name: Bump version
         run: |
-          gradle_file="mobile/build.gradle"
-          
           # Get and bump version code
-          currentVersionCode=$(grep 'versionCode' $gradle_file | sed -r 's/(.*) (.*)$/\2/')
-          let currentVersionCode++
+          VERSION_CODE=$(grep 'versionCode' $GRADLE_FILE | sed -r 's/(.*) (.*)$/\2/')
+          let VERSION_CODE++
           
           # Remove "-release$" and and "^refs/tags/" from version name
-          versionName="${GITHUB_REF%-release}"
-          versionName="${GITHUB_REF##*/}"
+          TAG_NAME="${GITHUB_REF##*/}"
+          VERSION_NAME="${TAG_NAME%-release}"
           
-          echo "Replace versionCode with $currentVersionCode"
-          sed --in-place -r "s/versionCode (.*)/versionCode ${currentVersionCode}/" $gradle_file
+          echo "Replace versionCode with $VERSION_CODE"
+          sed --in-place -r "s/versionCode (.*)/versionCode ${VERSION_CODE}/" $GRADLE_FILE
           echo "Replace versionName with $versionName"
-          sed --in-place -r "s/versionName \"(.*)\"/versionName \"${versionName}\"/" $gradle_file
+          sed --in-place -r "s/versionName \"(.*)\"/versionName \"${VERSION_NAME}\"/" $GRADLE_FILE
           
       - name: Build store description
         run: |
@@ -43,12 +46,10 @@ jobs:
           
       - name: Download release notes
         run: |
-          gradle_file="mobile/build.gradle"
-          currentVersionCode=$(grep 'versionCode' $gradle_file | sed -r 's/(.*) (.*)$/\2/')
-          echo "Get release notes for version code $currentVersionCode"
+          echo "Get release notes for version code $VERSION_CODE"
           
           retryCount=0
-          until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
+          until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt
           do
               let retryCount++
               if [ "$retryCount" -gt 20 ]
@@ -62,7 +63,7 @@ jobs:
           echo ""
           echo "Got release notes:"
           echo "========================"
-          cat fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
+          cat fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt
           echo "========================"
           
       - name: Commit changes
@@ -71,8 +72,8 @@ jobs:
           add: '.'
           author_name: openhab-bot
           author_email: bot@openhab.org
-          message: "Bump version to ${{ github.ref }} and update fastlane metadata"
+          message: "Bump version to ${{ env.VERSION_NAME }} and update fastlane metadata"
           signoff: true
           branch: master
-          tag: "${{ github.ref }}-fdroid"
+          tag: "${{ env.TAG_NAME }}-fdroid"
           token: ${{ secrets.GITHUB_TOKEN }}
