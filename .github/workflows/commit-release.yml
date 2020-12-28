@@ -30,7 +30,7 @@ jobs:
           
           echo "Replace versionCode with $VERSION_CODE"
           sed --in-place -r "s/versionCode (.*)/versionCode ${VERSION_CODE}/" $GRADLE_FILE
-          echo "Replace versionName with $versionName"
+          echo "Replace versionName with $VERSION_NAME"
           sed --in-place -r "s/versionName \"(.*)\"/versionName \"${VERSION_NAME}\"/" $GRADLE_FILE
           
       - name: Build store description
