@@ -44,6 +44,7 @@ jobs:
       - name: Download release notes
         run: |
           retryCount=0
+          currentVersionCode=$(grep 'versionCode' $gradle_file | sed -r 's/(.*) (.*)$/\2/')
           echo "Get release notes for version code $currentVersionCode"
           until curl https://api.github.com/repos/openhab/openhab-android/releases | jq -r '.[0].body' > fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
           do
@@ -56,6 +57,7 @@ jobs:
               sleep 5
           done
           
+          echo ""
           echo "Got release notes:"
           echo "========================"
           cat fastlane/metadata/android/en-US/changelogs/${currentVersionCode}.txt
