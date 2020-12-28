@@ -71,8 +71,8 @@ jobs:
           add: '.'
           author_name: openhab-bot
           author_email: bot@openhab.org
-          message: "Bump version to $GITHUB_REF and update fastlane metadata"
+          message: "Bump version to ${{ github.ref }} and update fastlane metadata"
           signoff: true
           branch: master
-          tag: "${GITHUB_REF}-fdroid"
+          tag: "${{ github.ref }}-fdroid"
           token: ${{ secrets.GITHUB_TOKEN }}
