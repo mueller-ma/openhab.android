@@ -18,11 +18,11 @@ jobs:
           gradle_file="mobile/build.gradle"
           currentVersionCode=$(grep 'versionCode' $gradle_file | sed -r 's/(.*) (.*)$/\2/')
           let currentVersionCode++
-          VERSION_NAME="${GITHUB_REF%-release}"
-          echo "Replace versionCode"
+          versionName="${GITHUB_REF%-release}"
+          echo "Replace versionCode with $currentVersionCode"
           sed --in-place -r "s/versionCode (.*)/versionCode ${currentVersionCode}/" $gradle_file
-          echo "Replace versionName"
-          sed --in-place -r "s/versionName \"(.*)\"/versionName \"${VERSION_NAME}\"/" $gradle_file
+          echo "Replace versionName with $versionName"
+          sed --in-place -r "s/versionName \"(.*)\"/versionName \"${versionName}\"/" $gradle_file
           
       - name: Build store description
         run: |
