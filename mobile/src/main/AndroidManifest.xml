@@ -127,6 +127,15 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".ui.TaskerOpenAppActivity"
+            android:label="@string/tasker_open_app_title"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_CONDITION" />
+                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".ui.BasicItemPickerActivity"
             android:launchMode="singleTask"
             android:label="@string/tile_item_picker_title"
