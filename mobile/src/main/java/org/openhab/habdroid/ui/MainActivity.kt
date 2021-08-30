@@ -771,8 +771,11 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
     private fun setupToolbar() {
         val toolbar = findViewById<Toolbar>(R.id.openhab_toolbar)
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(true)
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+            setDisplayUseLogoEnabled(true)
+        }
 
         progressBar = toolbar.findViewById(R.id.toolbar_progress_bar)
         setProgressIndicatorVisible(false)
@@ -1171,9 +1174,31 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
     }
 
     fun updateTitle() {
+        val actionBar = supportActionBar ?: return
         val title = controller.currentTitle
         val activeServerName = ServerConfiguration.load(prefs, getSecretPrefs(), prefs.getActiveServerId())?.name
-        setTitle(title ?: activeServerName ?: getString(R.string.app_name))
+        actionBar.title = title ?: activeServerName ?: getString(R.string.app_name)
+
+        val iconUrl = controller.currentSitemapIcon
+
+        if (iconUrl == null || connection == null) {
+            val defaultIcon = ContextCompat.getDrawable(this, R.drawable.ic_openhab_appicon_24dp)!!
+            val wrapped = DrawableCompat.wrap(defaultIcon.mutate())
+            DrawableCompat.setTint(wrapped, ContextCompat.getColor(this, R.color.light))
+            actionBar.setLogo(wrapped)
+        } else {
+            launch(Dispatchers.Main) {
+                val icon = connection
+                    ?.httpClient
+                    ?.get(iconUrl)
+                    ?.asBitmap((actionBar.height * 0.66f).toInt(), ImageConversionPolicy.ForceTargetSize)
+                    ?.response
+                    ?.toDrawable(resources)
+
+                actionBar.setLogo(icon)
+            }
+        }
+
         drawerToggle.isDrawerIndicatorEnabled = !controller.canGoBack()
     }
 

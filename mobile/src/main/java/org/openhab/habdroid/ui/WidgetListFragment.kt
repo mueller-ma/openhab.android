@@ -96,6 +96,7 @@ class WidgetListFragment : Fragment(), WidgetAdapter.ItemClickListener,
     }
     val displayPageUrl get() = arguments?.getString("displayPageUrl").orEmpty()
     val title get() = titleOverride ?: arguments?.getString("title")
+    val icon get() = arguments?.getString("icon")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,6 +110,7 @@ class WidgetListFragment : Fragment(), WidgetAdapter.ItemClickListener,
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString("title", titleOverride)
+        outState.putString("icon", icon)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -585,11 +587,12 @@ class WidgetListFragment : Fragment(), WidgetAdapter.ItemClickListener,
         private const val CONTEXT_MENU_ID_WRITE_CUSTOM_TAG = 10000
         private const val CONTEXT_MENU_ID_WRITE_DEVICE_ID = 10001
 
-        fun withPage(pageUrl: String, pageTitle: String?): WidgetListFragment {
+        fun withPage(pageUrl: String, pageTitle: String?, iconUrl: String?): WidgetListFragment {
             val fragment = WidgetListFragment()
             fragment.arguments = bundleOf(
                 "displayPageUrl" to pageUrl,
-                "title" to pageTitle
+                "title" to pageTitle,
+                "icon" to iconUrl
             )
             return fragment
         }

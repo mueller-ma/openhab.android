@@ -100,6 +100,12 @@ abstract class ContentController protected constructor(private val activity: Mai
         else -> fragmentForTitle?.title
     }
 
+    val currentSitemapIcon get() = when {
+        noConnectionFragment != null -> null
+        temporaryPage != null -> null
+        else -> fragmentForTitle?.icon
+    }
+
     protected abstract val fragmentForTitle: WidgetListFragment?
 
     protected val overridingFragment get() = when {
@@ -541,11 +547,11 @@ abstract class ContentController protected constructor(private val activity: Mai
     }
 
     private fun makeSitemapFragment(sitemap: Sitemap): WidgetListFragment {
-        return WidgetListFragment.withPage(sitemap.homepageLink, sitemap.label)
+        return WidgetListFragment.withPage(sitemap.homepageLink, sitemap.label, sitemap.icon?.toUrl(activity, true))
     }
 
     private fun makePageFragment(page: LinkedPage): WidgetListFragment {
-        return WidgetListFragment.withPage(page.link, page.title)
+        return WidgetListFragment.withPage(page.link, page.title, page.icon?.toUrl(activity, true))
     }
 
     internal enum class FragmentUpdateReason {
