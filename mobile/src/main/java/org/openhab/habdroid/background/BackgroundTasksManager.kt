@@ -778,7 +778,7 @@ class BackgroundTasksManager : BroadcastReceiver() {
                         }
                     }
                 }
-                ItemUpdateWorker.ValueWithInfo(ssidToSend)
+                ItemUpdateWorker.ValueWithInfo(ssidToSend, debugInfo = "Set Wi-Fi name to $ssidToSend")
             }
             @RequiresApi(Build.VERSION_CODES.M)
             VALUE_GETTER_MAP[PrefKeys.SEND_DND_MODE] = { context, _ ->
