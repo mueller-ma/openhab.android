@@ -28,6 +28,7 @@ import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.location.LocationManager
+import android.net.Uri
 import android.nfc.NfcAdapter
 import android.os.Build
 import android.os.Bundle
@@ -49,6 +50,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
+import androidx.browser.customtabs.CustomTabColorSchemeParams
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
@@ -69,7 +72,6 @@ import java.nio.charset.Charset
 import java.util.concurrent.CancellationException
 import javax.jmdns.ServiceInfo
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -890,11 +892,13 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
                     handled = true
                 }
                 R.id.habpanel -> {
-                    openWebViewUi(WebViewUi.HABPANEL, false, null)
+                    //openWebViewUi(WebViewUi.HABPANEL, false, null)
+                    openWebViewUiCustomTab("/habpanel/index.html", null)
                     handled = true
                 }
                 R.id.oh3_ui -> {
-                    openWebViewUi(WebViewUi.OH3_UI, false, null)
+                    //openWebViewUi(WebViewUi.OH3_UI, false, null)
+                    openWebViewUiCustomTab("/", null)
                     handled = true
                 }
                 R.id.frontail -> {
@@ -1229,6 +1233,27 @@ class MainActivity : AbstractBaseActivity(), ConnectionFactory.UpdateListener {
         hideSnackbar(SNACKBAR_TAG_SSE_ERROR)
         controller.showWebViewUi(ui, isStackRoot, subpage)
         drawerToggle.isDrawerIndicatorEnabled = isStackRoot
+    }
+
+    private fun openWebViewUiCustomTab(urlPath: String, subpage: String?) {
+        val url = connection?.httpClient?.buildUrl("$urlPath/${subpage.orEmpty()}") ?: return
+
+        val builder = CustomTabsIntent.Builder()
+            .setUrlBarHidingEnabled(true)
+            .setShowTitle(false)
+
+        val defaultColors = CustomTabColorSchemeParams.Builder()
+            .setToolbarColor(resolveThemedColor(R.attr.colorSurface))
+            .build()
+        builder.setDefaultColorSchemeParams(defaultColors)
+
+        //val intent = Intent()
+        //val pi = PendingIntent.getBroadcast(this, 0, intent, PendingIntent_Immutable)
+        //val micIcon = BitmapFactory.decodeResource(resources, R.drawable.ic_microphone_outline_white_24dp)
+        //builder.setActionButton(micIcon, getString(R.string.voice_command), pi, true)
+        //builder.addMenuItem(getString(R.string.home_shortcut_pin_to_home), pi)
+
+        builder.build().launchUrl(this, Uri.parse(url.toString()))
     }
 
     private fun buildUrlAndOpenSitemap(partUrl: String) {
