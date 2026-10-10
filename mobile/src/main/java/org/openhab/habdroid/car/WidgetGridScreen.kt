@@ -36,15 +36,28 @@ import org.openhab.habdroid.ui.shouldRenderAsPlayer
 
 class WidgetGridScreen(
     carContext: CarContext,
-    val url: String,
-    val id: String,
+    url: String,
+    id: String,
     val nestingDepth: Int,
-    private val title: String,
+    private var title: String,
     private val onPageSelected: (page: LinkedPage) -> Unit,
     private val onWidgetCommand: (widget: Widget, command: String) -> Unit
 ) : Screen(carContext) {
+    var url = url
+        private set
+    var id = id
+        private set
     private var widgets: MutableList<Widget>? = null
     private val widgetsById = mutableMapOf<String, Widget>()
+
+    fun showPage(url: String, id: String, title: String) {
+        this.url = url
+        this.id = id
+        this.title = title
+        widgets = null
+        widgetsById.clear()
+        invalidate()
+    }
 
     fun updateWidgets(widgets: List<Widget>) {
         this.widgets = widgets.toMutableList()

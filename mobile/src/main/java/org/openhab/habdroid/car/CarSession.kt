@@ -39,8 +39,9 @@ class CarSession(
     private val onSendWidgetCommand: (widget: Widget, command: String, sourceId: String) -> Unit
 ) : Session() {
     private var latestSitemapResult: Result<SitemapLookupResult>? = null
+    private var rootScreen: WidgetGridScreen? = null
     private val pageStack = mutableListOf<WidgetGridScreen>()
-    val pageUrls get() = pageStack.map { it.url }
+    val pageUrls get() = pageStack.map { it.url }.filter { it.isNotEmpty() }
 
     init {
         lifecycleScope.launch {
@@ -53,11 +54,7 @@ class CarSession(
                     if (sitemapResult != latestSitemapResult) {
                         Log.d(TAG, "Got new sitemap result $sitemapResult")
                         latestSitemapResult = sitemapResult
-                        pageStack.clear()
-                        onPageListChanged()
-
-                        val screenManager = carContext.getCarService(ScreenManager::class.java)
-                        screenManager.replaceRoot(createScreenForCurrentSitemap(sitemapResult))
+                        showSitemapResult(sitemapResult)
                     }
                 }
             }
@@ -76,30 +73,45 @@ class CarSession(
 
     fun handleLoadFailure(reason: Throwable?) {
         val screenManager = carContext.getCarService(ScreenManager::class.java)
-        screenManager.replaceRoot(createErrorScreen(null, reason, true))
+        screenManager.popToRoot()
+        screenManager.push(createErrorScreen(null, reason, true))
+        // Make sure the next sitemap result is applied even if it didn't change, so the error screen goes away
+        latestSitemapResult = null
     }
 
-    override fun onCreateScreen(intent: Intent) = createScreenForCurrentSitemap(latestSitemapResult)
+    override fun onCreateScreen(intent: Intent): Screen {
+        val root = createWidgetListScreen("", "", carContext.getString(R.string.app_name), 0)
+        rootScreen = root
+        return root
+    }
 
-    private fun createScreenForCurrentSitemap(result: Result<SitemapLookupResult>?): Screen = when {
-        result == null -> LoadingScreen(carContext)
+    // The host only hands back template steps when screens are popped, so the root screen is never replaced:
+    // its content is updated in place and errors are shown on top of it.
+    private fun showSitemapResult(result: Result<SitemapLookupResult>?) {
+        val root = rootScreen ?: return
+        val screenManager = carContext.getCarService(ScreenManager::class.java)
+        screenManager.popToRoot()
 
-        result.isSuccess -> {
-            val (sitemaps, selectedSitemapName) = result.getOrThrow()
-            val selectedSitemap = sitemaps.firstOrNull { it.name == selectedSitemapName }
-            if (selectedSitemap != null) {
-                createWidgetListScreen(
-                    selectedSitemap.homepageLink,
-                    selectedSitemap.name,
-                    selectedSitemap.label,
-                    0
-                )
-            } else {
-                createErrorScreen(carContext.getString(R.string.car_error_sitemap_not_found), null, false)
-            }
+        val selectedSitemap = result?.getOrNull()?.let { (sitemaps, selectedSitemapName) ->
+            sitemaps.firstOrNull { it.name == selectedSitemapName }
+        }
+        // Drop the connection of the previous page first, so the page is reloaded even if its URL didn't change
+        root.showPage("", "", carContext.getString(R.string.app_name))
+        onPageListChanged()
+        if (selectedSitemap != null) {
+            root.showPage(selectedSitemap.homepageLink, selectedSitemap.name, cleanTitle(selectedSitemap.label))
+            onPageListChanged()
         }
 
-        else -> createErrorScreen(null, result.exceptionOrNull(), true)
+        when {
+            result == null || selectedSitemap != null -> {}
+
+            result.isSuccess -> screenManager.push(
+                createErrorScreen(carContext.getString(R.string.car_error_sitemap_not_found), null, false)
+            )
+
+            else -> screenManager.push(createErrorScreen(null, result.exceptionOrNull(), true))
+        }
     }
 
     private fun createErrorScreen(message: CharSequence?, reason: Throwable?, allowRetry: Boolean): ErrorScreen {
@@ -116,15 +128,16 @@ class CarSession(
     }
 
     private fun createWidgetListScreen(url: String, id: String, title: String, nestingDepth: Int): WidgetGridScreen {
-        val screen = WidgetGridScreen(
+        lateinit var screen: WidgetGridScreen
+        screen = WidgetGridScreen(
             carContext,
             url,
             id,
             nestingDepth,
-            // Omit state portion of the label, as we can't update it anyway without it counting against the step limit
-            title.substringBefore("[").trim(),
+            cleanTitle(title),
             onPageSelected = { page -> openWidgetListScreen(page, nestingDepth + 1) },
-            onWidgetCommand = { widget, command -> onSendWidgetCommand(widget, command, buildSourceId(id)) }
+            // The root screen's page can change, so look up its ID when sending the command
+            onWidgetCommand = { widget, command -> onSendWidgetCommand(widget, command, buildSourceId(screen.id)) }
         )
         screen.lifecycle.onDestroy {
             if (pageStack.remove(screen)) {
@@ -148,15 +161,8 @@ class CarSession(
         screen.screenManager.push(screen)
     }
 
-    private fun ScreenManager.replaceRoot(screen: Screen) {
-        popToRoot()
-        // At this point only the root screen is left, which we want to replace with the screen
-        // we're going to create. As there's no direct way to do that, we push the new screen to the top
-        // and replace the old root afterwards.
-        val oldRoot = top
-        push(screen)
-        remove(oldRoot)
-    }
+    // Omit state portion of the label, as we can't update it anyway without it counting against the step limit
+    private fun cleanTitle(title: String) = title.substringBefore("[").trim()
 
     private data class SitemapLookupResult(val sitemaps: List<Sitemap>, val selectedSitemapName: String?)
 
