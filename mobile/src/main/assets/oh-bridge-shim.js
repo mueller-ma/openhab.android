@@ -942,6 +942,26 @@
 
   window.addEventListener('resize', scheduleEditorFix)
 
+  // Android: hiding/showing the native action bar resizes the WebView while a Framework7 expandable
+  // card (.card-expandable) is still animating its opening/closing transform (.card-opening /
+  // .card-closing). Framework7's resize handler temporarily sets transform to identity and reads
+  // getBoundingClientRect(), which returns mid-transition coordinates unless .card-opened
+  // (transition-duration: 0s) is active. Defer window resize events until the card transition ends.
+  var cardResizeDeferred = false
+  function isCardTransitioning() {
+    return !!document.querySelector('.card-expandable.card-opening, .card-expandable.card-closing')
+  }
+  window.addEventListener(
+    'resize',
+    function (e) {
+      if (active && isCardTransitioning()) {
+        e.stopImmediatePropagation()
+        cardResizeDeferred = true
+      }
+    },
+    true
+  )
+
   // ---------------------------------------------------------------------------
   // Start-up and change tracking
   // ---------------------------------------------------------------------------
@@ -990,6 +1010,10 @@
   }
 
   function onMutation(mutations) {
+    if (cardResizeDeferred && !isCardTransitioning()) {
+      cardResizeDeferred = false
+      window.dispatchEvent(new Event('resize'))
+    }
     scheduleReport()
     for (var i = 0; i < mutations.length; i++) {
       var added = mutations[i].addedNodes
